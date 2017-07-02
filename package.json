@@ -4,7 +4,10 @@
   "description": "Generates a package.json file containing the external modules used by your webpack bundle",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "cut-patch-release": "npm version patch && git push --follow-tags && npm publish",
+    "cut-minor-release": "npm version minor && git push --follow-tags && npm publish",
+    "cut-major-release": "npm version major && git push --follow-tags && npm publish"
   },
   "repository": {
     "type": "git",
@@ -22,5 +25,8 @@
   "bugs": {
     "url": "https://github.com/lostpebble/generate-package-json-webpack-plugin/issues"
   },
-  "homepage": "https://github.com/lostpebble/generate-package-json-webpack-plugin#readme"
+  "homepage": "https://github.com/lostpebble/generate-package-json-webpack-plugin#readme",
+  "devDependencies": {
+    "cross-env": "^5.0.1"
+  }
 }
