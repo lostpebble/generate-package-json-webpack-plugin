@@ -84,9 +84,13 @@ This will be merged with the generated `"dependencies": { ... }` to form the fin
 
 ### Second argument: `versionsPackageFilename`
 
-( **Optional** ) **unless** your `webpack.config.js` file is not in the same folder as your base projects `package.json` file.
+( **Optional** ) **unless** your Webpack config file is not in the same folder as
+your base project's `package.json` file.
 
-This is the filename from which the plugin will source the versions for the modules that appear in this bundle. Usually it will just be the base `package.json` file in your parent directory (assuming that your development code has been using dependencies sourced from your base `node_modules` folder):
+This is the filename from which the plugin will source the versions for the modules
+that appear in the final generated `package.json`. Usually it will just be the base
+`package.json` file in your parent directory (assuming that your development code
+has been using dependencies sourced from your base `node_modules` folder):
 
 The **default** value inside the plugin is set like this:
 ```
