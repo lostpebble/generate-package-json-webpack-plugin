@@ -1,0 +1,26 @@
+{
+  "name": "generate-package-json-webpack-plugin",
+  "version": "0.0.1",
+  "description": "Generates a package.json file containing the external modules used by your webpack bundle",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lostpebble/generate-package-json-webpack-plugin.git"
+  },
+  "keywords": [
+    "webpack",
+    "plugin",
+    "package.json",
+    "node",
+    "modules"
+  ],
+  "author": "Paul Myburgh",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lostpebble/generate-package-json-webpack-plugin/issues"
+  },
+  "homepage": "https://github.com/lostpebble/generate-package-json-webpack-plugin#readme"
+}
