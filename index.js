@@ -3,12 +3,13 @@
  */
 const fs = require("fs");
 
-function GeneratePackageJsonPlugin(versionsPackageFilename = null, otherPackageValues = {
+function GeneratePackageJsonPlugin(otherPackageValues = {
   name: "",
   version: "0.0.1",
-}) {
+}, versionsPackageFilename = null) {
   if (versionsPackageFilename === null) {
-    throw new Error("Must provide a source file for package.json dependency versions");
+    versionsPackageFilename = __dirname + "/package.json";
+    // throw new Error("Must provide a source file for package.json dependency versions");
   }
 
   const sourcePackage = JSON.parse(fs.readFileSync(versionsPackageFilename).toString());
