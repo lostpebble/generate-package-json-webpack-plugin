@@ -6,6 +6,10 @@
 
 This plugin is useful for when you have a large source project for development / testing from which smaller Node.js projects are bundled for various deployments and applications. Such as Google Cloud Functions.
 
+_Or even just for bundling your regular Node.js server code, and knowing that your `package.json` is as lean as it can possibly be for that next deployment._
+
+We all know how our development environments can get a bit messy... :sweat_smile:
+
 ### :floppy_disk: Install
 
 ```
