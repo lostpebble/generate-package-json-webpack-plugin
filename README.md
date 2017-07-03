@@ -28,11 +28,13 @@ const basePackageValues = {
   }
 }
 
+const versionsPackageFilename = __dirname + "/package.json";
+
 // inside your webpack configuration
-plugins: [new GeneratePackageJsonPlugin(basePackageValues)],
+plugins: [new GeneratePackageJsonPlugin(basePackageValues, versionsPackageFilename)],
 ```
 
-That's pretty much it. The plugin will generate a new `package.json` file with all the dependencies your bundle uses, merged with the values you pass into the plugin.
+That's pretty much it. The plugin will generate a new `package.json` file with all the dependencies your code uses, merged with the values you pass into the plugin. The versions for the detected dependencies are sourced from the `versionsPackageFilename` here.
 
 ### Important note on `externals`
 
@@ -67,7 +69,7 @@ new GeneratePackageJsonPlugin(basePackageValues, versionsPackageFilename)
 
 ### First argument: `basePackageValues`
 
-( **Recommended** ) You should set the base values for your `package.json` file here. For example:
+( **Required** ) You should set the base values for your `package.json` file here. For example:
 
 ```
 const basePackageValues = {
@@ -84,15 +86,14 @@ This will be merged with the generated `"dependencies": { ... }` to form the fin
 
 ### Second argument: `versionsPackageFilename`
 
-( **Optional** ) **unless** your Webpack config file is not in the same folder as
-your base project's `package.json` file.
+( **Required** )
 
 This is the filename from which the plugin will source the versions for the modules
 that appear in the final generated `package.json`. Usually it will just be the base
 `package.json` file in your parent directory (assuming that your development code
 has been using dependencies sourced from your base `node_modules` folder):
 
-The **default** value inside the plugin is set like this:
+Commonly, this will be set like this:
 ```
 const versionsPackageFilename = __dirname + "/package.json";
 ```

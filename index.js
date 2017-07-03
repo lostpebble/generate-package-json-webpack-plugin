@@ -8,8 +8,7 @@ function GeneratePackageJsonPlugin(otherPackageValues = {
   version: "0.0.1",
 }, versionsPackageFilename = null) {
   if (versionsPackageFilename === null) {
-    versionsPackageFilename = __dirname + "/package.json";
-    // throw new Error("Must provide a source file for package.json dependency versions");
+    throw new Error("GeneratePackageJsonPlugin: Must provide a source file for package.json as second plugin argument");
   }
 
   const sourcePackage = JSON.parse(fs.readFileSync(versionsPackageFilename).toString());
