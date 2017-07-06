@@ -35,12 +35,23 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
     compilation.chunks.forEach((chunk) => {
       const modules = {};
 
-      chunk.forEachModule((module) => {
-        if (module.portableId.indexOf("external") !== -1) {
-          const moduleName = getNameFromPortableId(module.portableId);
-          modules[moduleName] = this.dependencyVersionMap[moduleName];
+      if (typeof chunk.forEachModule !== "undefined") {
+        chunk.forEachModule((module) => {
+          if (module.portableId.indexOf("external") !== -1) {
+            const moduleName = getNameFromPortableId(module.portableId);
+            modules[moduleName] = this.dependencyVersionMap[moduleName];
+          }
+        });
+      } else {
+        for (let i = 0; i < chunk.modules.length; i += 1) {
+          const module = chunk.modules[i];
+
+          if (module.portableId.indexOf("external") !== -1) {
+            const moduleName = getNameFromPortableId(module.portableId);
+            modules[moduleName] = this.dependencyVersionMap[moduleName];
+          }
         }
-      });
+      }
 
       Object.assign(this.otherPackageValues, { dependencies: modules });
       const json = JSON.stringify(this.otherPackageValues, this.replacer ? this.replacer : null, this.space ? this.space : 2);
