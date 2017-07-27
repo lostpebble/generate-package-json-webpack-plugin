@@ -53,7 +53,7 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
         }
       }
 
-      Object.assign(this.otherPackageValues, { dependencies: modules });
+      Object.assign(this.otherPackageValues, { dependencies: orderKeys(modules) });
       const json = JSON.stringify(this.otherPackageValues, this.replacer ? this.replacer : null, this.space ? this.space : 2);
 
       compilation.assets['package.json'] = {
@@ -69,5 +69,24 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
     callback();
   });
 };
+
+function orderKeys(obj) {
+  const keys = Object.keys(obj).sort(function keyOrder(k1, k2) {
+    if (k1 < k2) return -1;
+    else if (k1 > k2) return +1;
+    else return 0;
+  });
+
+  let i, after = {};
+  for (i = 0; i < keys.length; i++) {
+    after[keys[i]] = obj[keys[i]];
+    delete obj[keys[i]];
+  }
+
+  for (i = 0; i < keys.length; i++) {
+    obj[keys[i]] = after[keys[i]];
+  }
+  return obj;
+}
 
 module.exports = GeneratePackageJsonPlugin;
