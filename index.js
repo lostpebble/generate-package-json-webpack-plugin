@@ -32,9 +32,9 @@ function getNameFromPortableId(raw) {
 
 GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
   compiler.plugin('emit', (compilation, callback) => {
+    const modules = {};
+    
     compilation.chunks.forEach((chunk) => {
-      const modules = {};
-
       if (typeof chunk.forEachModule !== "undefined") {
         chunk.forEachModule((module) => {
           if (module.portableId.indexOf("external") !== -1) {
@@ -52,20 +52,20 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
           }
         }
       }
-
-      Object.assign(this.otherPackageValues, { dependencies: orderKeys(modules) });
-      const json = JSON.stringify(this.otherPackageValues, this.replacer ? this.replacer : null, this.space ? this.space : 2);
-
-      compilation.assets['package.json'] = {
-        source: function() {
-          return json;
-        },
-        size: function() {
-          return json.length;
-        }
-      };
     });
 
+    Object.assign(this.otherPackageValues, { dependencies: orderKeys(modules) });
+    const json = JSON.stringify(this.otherPackageValues, this.replacer ? this.replacer : null, this.space ? this.space : 2);
+
+    compilation.assets['package.json'] = {
+      source: function() {
+        return json;
+      },
+      size: function() {
+        return json.length;
+      }
+    };
+    
     callback();
   });
 };
