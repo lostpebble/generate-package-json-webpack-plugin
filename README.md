@@ -62,7 +62,42 @@ externals: [nodeExternals({
 
 As you can see, you can add modules that you deliberately _do_ want bundled using the `whitelist` option.
 
-### Simple API
+### Adding modules outside of your code (build modules etc.)
+#### OR to deliberately set different versions of bundled dependencies
+
+Simply place those dependencies inside the `basePackageValues` object which represents the base of the new `package.json` to be created.
+
+Keep the version number string empty (`""`) to pull the
+version from your original `package.json` which was set with `versionsPackageFilename`.
+To use a version which is different - set the version string deliberately here.
+
+```
+const basePackageValues = {
+  "name": "my-nodejs-module",
+  "version": "1.0.0",
+  "main": "./index.js",
+  "scripts": {
+    "start": "cross-var node --max-old-space-size=$NODE_JS_MAX_OLD_SPACE_SIZE ./server.js"
+  }
+  "engines": {
+    "node": "<= 6.9.1"
+  },
+  dependencies: {
+    "cross-var": "^1.1.0",
+    "cross-env": "",
+  },
+}
+```
+
+In this example, `cross-var` has deliberately been set to version `^1.1.0`, and
+regardless of what is in `versionsPackageFilename` it will use this version.
+`cross-env` however will pull its version number from `versionsPackageFilename`.
+
+This is mostly useful for adding dependencies which are required at runtime but which are not picked up in your webpack
+bundle. Such as `cross-var` in this example which injects environment variables into a run script in a cross-platform
+friendly way.
+
+## Simple API
 
 ```
 new GeneratePackageJsonPlugin(basePackageValues, versionsPackageFilename)
