@@ -54,6 +54,22 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
       }
     });
 
+    // Overwrite modules or set new module dependencies for those that have been
+    // deliberately set in " otherPackageValues.dependencies "
+    if (this.otherPackageValues && this.otherPackageValues.dependencies) {
+      const nonWebpackModuleNames = Object.keys(this.otherPackageValues.dependencies);
+
+      for (let k = 0; k < nonWebpackModuleNames.length; k += 1) {
+        const moduleName = nonWebpackModuleNames[k];
+
+        if (this.otherPackageValues.dependencies[moduleName].length > 0) {
+          modules[moduleName] = this.otherPackageValues.dependencies[moduleName];
+        } else {
+          modules[moduleName] = this.dependencyVersionMap[moduleName];
+        }
+      }
+    }
+
     Object.assign(this.otherPackageValues, { dependencies: orderKeys(modules) });
     const json = JSON.stringify(this.otherPackageValues, this.replacer ? this.replacer : null, this.space ? this.space : 2);
 
