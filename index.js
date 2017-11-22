@@ -2,19 +2,46 @@
  * Created by Paul on 2017-07-02.
  */
 const fs = require("fs");
+const util = require("util");
+
+let debugMode = false;
 
 function GeneratePackageJsonPlugin(otherPackageValues = {
   name: "",
   version: "0.0.1",
-}, versionsPackageFilename = null) {
+}, versionsPackageFilename = null, {
+  debug = false,
+  extraSourcePackageFilenames = [],
+} = {}) {
   if (versionsPackageFilename === null) {
     throw new Error("GeneratePackageJsonPlugin: Must provide a source file for package.json as second plugin argument");
   }
 
+  if (debug) {
+    console.log(`GeneratePackageJsonPlugin: Debugging mode activated!`);
+    debugMode = true;
+  }
+
+  const extraSourcePackagesDependenciesCombined = {};
+
+  if (extraSourcePackageFilenames.length > 0) {
+    for (const filename of extraSourcePackageFilenames) {
+      const extraSourcePackage = JSON.parse(fs.readFileSync(filename).toString());
+
+      Object.assign(extraSourcePackagesDependenciesCombined, extraSourcePackage.dependencies ? extraSourcePackage.dependencies : {});
+    }
+  }
+
   const sourcePackage = JSON.parse(fs.readFileSync(versionsPackageFilename).toString());
-  const dependencyVersionMap = Object.assign({}, sourcePackage.dependencies, sourcePackage.devDependencies);
+  const dependencyVersionMap = Object.assign({}, extraSourcePackagesDependenciesCombined, sourcePackage.dependencies, sourcePackage.devDependencies);
 
   Object.assign(this, { otherPackageValues, dependencyVersionMap });
+}
+
+function logIfDebug(something, object = "") {
+  if (debugMode) {
+    console.log(something, util.inspect(object, { depth: 3 }));
+  }
 }
 
 function getNameFromPortableId(raw) {
@@ -38,8 +65,11 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
       if (typeof chunk.forEachModule !== "undefined") {
         chunk.forEachModule((module) => {
           if (module.portableId.indexOf("external") !== -1) {
+            logIfDebug(`GPJWP: Found external module: ${module.portableId}`);
             const moduleName = getNameFromPortableId(module.portableId);
             modules[moduleName] = this.dependencyVersionMap[moduleName];
+          } else {
+            logIfDebug(`GPJWP: Found module: ${module.portableId}`);
           }
         });
       } else {
@@ -47,8 +77,11 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
           const module = chunk.modules[i];
 
           if (module.portableId.indexOf("external") !== -1) {
+            logIfDebug(`GPJWP: Found external module: ${module.portableId}`);
             const moduleName = getNameFromPortableId(module.portableId);
             modules[moduleName] = this.dependencyVersionMap[moduleName];
+          } else {
+            logIfDebug(`GPJWP: Found module: ${module.portableId}`);
           }
         }
       }
@@ -63,8 +96,10 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
         const moduleName = nonWebpackModuleNames[k];
 
         if (this.otherPackageValues.dependencies[moduleName].length > 0) {
+          logIfDebug(`GPJWP: Adding deliberate module with version set in plugin options: ${moduleName} -> ${this.otherPackageValues.dependencies[moduleName]}`);
           modules[moduleName] = this.otherPackageValues.dependencies[moduleName];
         } else {
+          logIfDebug(`GPJWP: Adding deliberate module with version found in source package.json: ${moduleName} -> ${this.dependencyVersionMap[moduleName]}`);
           modules[moduleName] = this.dependencyVersionMap[moduleName];
         }
       }
