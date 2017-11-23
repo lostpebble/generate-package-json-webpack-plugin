@@ -1,6 +1,6 @@
 {
   "name": "generate-package-json-webpack-plugin",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Generates a package.json file containing the external modules used by your webpack bundle",
   "main": "index.js",
   "scripts": {
