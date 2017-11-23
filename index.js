@@ -25,9 +25,13 @@ function GeneratePackageJsonPlugin(otherPackageValues = {
   const extraSourcePackagesDependenciesCombined = {};
 
   if (extraSourcePackageFilenames.length > 0) {
-    for (const filename of extraSourcePackageFilenames) {
-      const extraSourcePackage = JSON.parse(fs.readFileSync(filename).toString());
+    logIfDebug(`GPJWP: Received ${extraSourcePackageFilenames.length} extra package.json file${extraSourcePackageFilenames.length > 1 ? "s" : ""} from which to source versions (later takes preference):`);
+    extraSourcePackageFilenames.reverse();
+    let fileIndex = 1;
 
+    for (const filename of extraSourcePackageFilenames) {
+      logIfDebug(`${fileIndex++} : ${filename}`);
+      const extraSourcePackage = JSON.parse(fs.readFileSync(filename).toString());
       Object.assign(extraSourcePackagesDependenciesCombined, extraSourcePackage.dependencies ? extraSourcePackage.dependencies : {});
     }
   }
@@ -35,12 +39,18 @@ function GeneratePackageJsonPlugin(otherPackageValues = {
   const sourcePackage = JSON.parse(fs.readFileSync(versionsPackageFilename).toString());
   const dependencyVersionMap = Object.assign({}, extraSourcePackagesDependenciesCombined, sourcePackage.dependencies, sourcePackage.devDependencies);
 
+  logIfDebug(`GPJWP: Final map of dependency versions to be used if encountered in bundle:\n`, dependencyVersionMap);
+
   Object.assign(this, { otherPackageValues, dependencyVersionMap });
 }
 
 function logIfDebug(something, object = "") {
   if (debugMode) {
-    console.log(something, util.inspect(object, { depth: 3 }));
+    if (object) {
+      console.log(something, util.inspect(object, { depth: 3 }));
+    } else {
+      console.log(something);
+    }
   }
 }
 
@@ -96,14 +106,16 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
         const moduleName = nonWebpackModuleNames[k];
 
         if (this.otherPackageValues.dependencies[moduleName].length > 0) {
-          logIfDebug(`GPJWP: Adding deliberate module with version set in plugin options: ${moduleName} -> ${this.otherPackageValues.dependencies[moduleName]}`);
+          logIfDebug(`GPJWP: Adding deliberate module with version set deliberately: ${moduleName} -> ${this.otherPackageValues.dependencies[moduleName]}`);
           modules[moduleName] = this.otherPackageValues.dependencies[moduleName];
         } else {
-          logIfDebug(`GPJWP: Adding deliberate module with version found in source package.json: ${moduleName} -> ${this.dependencyVersionMap[moduleName]}`);
+          logIfDebug(`GPJWP: Adding deliberate module with version found in sources: ${moduleName} -> ${this.dependencyVersionMap[moduleName]}`);
           modules[moduleName] = this.dependencyVersionMap[moduleName];
         }
       }
     }
+
+    logIfDebug(`GPJWP: Modules to be used in generated package.json`, modules);
 
     Object.assign(this.otherPackageValues, { dependencies: orderKeys(modules) });
     const json = JSON.stringify(this.otherPackageValues, this.replacer ? this.replacer : null, this.space ? this.space : 2);
