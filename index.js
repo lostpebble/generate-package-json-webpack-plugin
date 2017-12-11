@@ -77,7 +77,10 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
           if (module.portableId.indexOf("external") !== -1) {
             logIfDebug(`GPJWP: Found external module: ${module.portableId}`);
             const moduleName = getNameFromPortableId(module.portableId);
-            modules[moduleName] = this.dependencyVersionMap[moduleName];
+            const dependencyVersion = this.dependencyVersionMap[moduleName];
+            if (dependencyVersion) {
+              modules[moduleName] = dependencyVersion;
+            }
           } else {
             logIfDebug(`GPJWP: Found module: ${module.portableId}`);
           }
@@ -89,7 +92,10 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
           if (module.portableId.indexOf("external") !== -1) {
             logIfDebug(`GPJWP: Found external module: ${module.portableId}`);
             const moduleName = getNameFromPortableId(module.portableId);
-            modules[moduleName] = this.dependencyVersionMap[moduleName];
+            const dependencyVersion = this.dependencyVersionMap[moduleName];
+            if (dependencyVersion) {
+              modules[moduleName] = dependencyVersion;
+            }
           } else {
             logIfDebug(`GPJWP: Found module: ${module.portableId}`);
           }
