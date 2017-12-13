@@ -123,8 +123,8 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
 
     logIfDebug(`GPJWP: Modules to be used in generated package.json`, modules);
 
-    Object.assign(this.otherPackageValues, { dependencies: orderKeys(modules) });
-    const json = JSON.stringify(this.otherPackageValues, this.replacer ? this.replacer : null, this.space ? this.space : 2);
+    const finalPackageValues = Object.assign({}, this.otherPackageValues, { dependencies: orderKeys(modules) });
+    const json = JSON.stringify(finalPackageValues, this.replacer ? this.replacer : null, this.space ? this.space : 2);
 
     compilation.assets['package.json'] = {
       source: function() {
