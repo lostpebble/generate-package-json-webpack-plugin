@@ -68,37 +68,37 @@ function getNameFromPortableId(raw) {
 }
 
 GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
-  compiler.plugin('emit', (compilation, callback) => {
+  const hook = (compilation, callback) => {
     const modules = {};
+
+    const processModule = (module) => {
+      const portableId = module.portableId ? module.portableId : module.identifier();
+
+      if (portableId.indexOf("external") !== -1) {
+        logIfDebug(`GPJWP: Found external module: ${portableId}`);
+        const moduleName = getNameFromPortableId(portableId);
+        const dependencyVersion = this.dependencyVersionMap[moduleName];
+        if (dependencyVersion) {
+          modules[moduleName] = dependencyVersion;
+        }
+      } else {
+        logIfDebug(`GPJWP: Found module: ${portableId}`);
+      }
+    };
     
     compilation.chunks.forEach((chunk) => {
-      if (typeof chunk.forEachModule !== "undefined") {
+      if (typeof chunk.modulesIterable !== "undefined") {
+        for (const module of chunk.modulesIterable) {
+          processModule(module);
+        }
+      } else if (typeof chunk.forEachModule !== "undefined") {
         chunk.forEachModule((module) => {
-          if (module.portableId.indexOf("external") !== -1) {
-            logIfDebug(`GPJWP: Found external module: ${module.portableId}`);
-            const moduleName = getNameFromPortableId(module.portableId);
-            const dependencyVersion = this.dependencyVersionMap[moduleName];
-            if (dependencyVersion) {
-              modules[moduleName] = dependencyVersion;
-            }
-          } else {
-            logIfDebug(`GPJWP: Found module: ${module.portableId}`);
-          }
+          processModule(module);
         });
       } else {
         for (let i = 0; i < chunk.modules.length; i += 1) {
           const module = chunk.modules[i];
-
-          if (module.portableId.indexOf("external") !== -1) {
-            logIfDebug(`GPJWP: Found external module: ${module.portableId}`);
-            const moduleName = getNameFromPortableId(module.portableId);
-            const dependencyVersion = this.dependencyVersionMap[moduleName];
-            if (dependencyVersion) {
-              modules[moduleName] = dependencyVersion;
-            }
-          } else {
-            logIfDebug(`GPJWP: Found module: ${module.portableId}`);
-          }
+          processModule(module);
         }
       }
     });
@@ -136,7 +136,13 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
     };
     
     callback();
-  });
+  };
+
+  if (typeof compiler.hooks !== "undefined") {
+    compiler.hooks.emit.tapAsync("GeneratePackageJsonPlugin", hook);
+  } else {
+    compiler.plugin('emit', hook);
+  }
 };
 
 function orderKeys(obj) {
