@@ -114,9 +114,11 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
         if (this.otherPackageValues.dependencies[moduleName].length > 0) {
           logIfDebug(`GPJWP: Adding deliberate module with version set deliberately: ${moduleName} -> ${this.otherPackageValues.dependencies[moduleName]}`);
           modules[moduleName] = this.otherPackageValues.dependencies[moduleName];
-        } else {
+        } else if (this.dependencyVersionMap[moduleName] != null) {
           logIfDebug(`GPJWP: Adding deliberate module with version found in sources: ${moduleName} -> ${this.dependencyVersionMap[moduleName]}`);
           modules[moduleName] = this.dependencyVersionMap[moduleName];
+        } else {
+          console.warn(`GeneratePackageJsonPlugin: You have set a module to be included deliberately with name: "${moduleName}" - but there is no version specified in any source files!`);
         }
       }
     }
