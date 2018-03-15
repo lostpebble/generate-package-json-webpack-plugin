@@ -100,7 +100,7 @@ friendly way.
 ## Simple API
 
 ```
-new GeneratePackageJsonPlugin(basePackageValues, versionsPackageFilename)
+new GeneratePackageJsonPlugin(basePackageValues, versionsPackageFilename, extraOptions)
 ```
 
 ### First argument: `basePackageValues`
@@ -133,6 +133,28 @@ Commonly, this will be set like this:
 ```
 const versionsPackageFilename = __dirname + "/package.json";
 ```
+
+### Third argument: `extraOptions`
+
+( *Optional* )
+
+An object with the following structure:
+
+```
+  {
+     debug: true,
+     extraSourcePackageFilenames: [
+       join(__dirname, "../other-workspace/package.json"),
+    ],
+  }
+```
+
+**The options:**
+
+`debug` (default: *false*) : Enable to show some debugging information on how the plugin is finding dependencies and creating a new `package.json`.
+
+`extraSourcePackageFilenames` : This is useful for mono-repos and projects where your dependencies in your code are not only defined in a single `package.json` file.
+If you share code between multiple projects or "workspaces" to be bundled into a final distribution project, you probably want to set this option.
 
 ### :mag: Things to take note of
 
