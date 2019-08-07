@@ -111,7 +111,7 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
       for (let k = 0; k < nonWebpackModuleNames.length; k += 1) {
         const moduleName = nonWebpackModuleNames[k];
 
-        if (this.otherPackageValues.dependencies[moduleName].length > 0) {
+        if (this.otherPackageValues.dependencies[moduleName] && this.otherPackageValues.dependencies[moduleName].length > 0) {
           logIfDebug(`GPJWP: Adding deliberate module with version set deliberately: ${moduleName} -> ${this.otherPackageValues.dependencies[moduleName]}`);
           modules[moduleName] = this.otherPackageValues.dependencies[moduleName];
         } else if (this.dependencyVersionMap[moduleName] != null) {
