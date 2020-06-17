@@ -12,6 +12,7 @@ function GeneratePackageJsonPlugin(otherPackageValues = {
 }, versionsPackageFilename = null, {
   debug = false,
   extraSourcePackageFilenames = [],
+  additionalDependencies: {},
 } = {}) {
   if (versionsPackageFilename === null) {
     throw new Error("GeneratePackageJsonPlugin: Must provide a source file for package.json as second plugin argument");
@@ -41,7 +42,7 @@ function GeneratePackageJsonPlugin(otherPackageValues = {
 
   logIfDebug(`GPJWP: Final map of dependency versions to be used if encountered in bundle:\n`, dependencyVersionMap);
 
-  Object.assign(this, { otherPackageValues, dependencyVersionMap });
+  Object.assign(this, { otherPackageValues, dependencyVersionMap, additionalDependencies });
 }
 
 function logIfDebug(something, object = "") {
@@ -69,7 +70,7 @@ function getNameFromPortableId(raw) {
 
 GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
   const hook = (compilation, callback) => {
-    const modules = {};
+    const modules = Object.assign({}, this.additionalDependencies);
 
     const processModule = (module) => {
       const portableId = module.portableId ? module.portableId : module.identifier();
