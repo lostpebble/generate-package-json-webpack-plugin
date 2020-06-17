@@ -156,6 +156,9 @@ An object with the following structure:
 `extraSourcePackageFilenames` : This is useful for mono-repos and projects where your dependencies in your code are not only defined in a single `package.json` file.
 If you share code between multiple projects or "workspaces" to be bundled into a final distribution project, you probably want to set this option.
 
+`useInstalledVersions`: Resolve node modules and use the exact version that installed in your
+environment. This is useful to lock versions on production deployments.
+
 ### :mag: Things to take note of
 
 You should remember to set the `"main": "./index.js"` to the correct filename (would probably

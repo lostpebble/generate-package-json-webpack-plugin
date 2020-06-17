@@ -12,6 +12,7 @@ function GeneratePackageJsonPlugin(otherPackageValues = {
 }, versionsPackageFilename = null, {
   debug = false,
   extraSourcePackageFilenames = [],
+  useInstalledVersions = false,
 } = {}) {
   if (versionsPackageFilename === null) {
     throw new Error("GeneratePackageJsonPlugin: Must provide a source file for package.json as second plugin argument");
@@ -41,7 +42,7 @@ function GeneratePackageJsonPlugin(otherPackageValues = {
 
   logIfDebug(`GPJWP: Final map of dependency versions to be used if encountered in bundle:\n`, dependencyVersionMap);
 
-  Object.assign(this, { otherPackageValues, dependencyVersionMap });
+  Object.assign(this, { otherPackageValues, dependencyVersionMap, useInstalledVersions });
 }
 
 function logIfDebug(something, object = "") {
@@ -73,13 +74,39 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
 
     const processModule = (module) => {
       const portableId = module.portableId ? module.portableId : module.identifier();
+      const context = module.issuer && module.issuer.context;
 
       if (portableId.indexOf("external") !== -1) {
         logIfDebug(`GPJWP: Found external module: ${portableId}`);
         const moduleName = getNameFromPortableId(portableId);
-        const dependencyVersion = this.dependencyVersionMap[moduleName];
-        if (dependencyVersion) {
-          modules[moduleName] = dependencyVersion;
+
+        if (this.useInstalledVersions) {
+          let modulePackageFile;
+          try {
+            modulePackageFile = require.resolve(`${moduleName}/package.json`, context ? {
+              paths: [context],
+            } : undefined);
+          } catch (e) {
+            throw new Error(`Can't resolve module: ${moduleName}`);
+          }
+
+          let version;
+          try {
+            version = JSON.parse(fs.readFileSync(modulePackageFile).toString()).version;
+          } catch (e) {
+            throw new Error(`Can't parse package.json file: ${modulePackageFile}`);
+          }
+
+          if (!version) {
+            throw new Error(`Missing package.json version: ${modulePackageFile}`);
+          }
+
+          modules[moduleName] = version;
+        } else {
+          const dependencyVersion = this.dependencyVersionMap[moduleName];
+          if (dependencyVersion) {
+            modules[moduleName] = dependencyVersion;
+          }
         }
       } else {
         logIfDebug(`GPJWP: Found module: ${portableId}`);
