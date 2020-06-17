@@ -12,7 +12,7 @@ function GeneratePackageJsonPlugin(otherPackageValues = {
 }, versionsPackageFilename = null, {
   debug = false,
   extraSourcePackageFilenames = [],
-  additionalDependencies: {},
+  additionalDependencies = {},
   useInstalledVersions = false,
 } = {}) {
   if (versionsPackageFilename === null) {
