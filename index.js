@@ -3,6 +3,7 @@
  */
 const fs = require("fs");
 const util = require("util");
+const { builtinModules } = require("module");
 
 let debugMode = false;
 
@@ -75,42 +76,50 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
 
     const processModule = (module) => {
       const portableId = module.portableId ? module.portableId : module.identifier();
-      const context = module.issuer && module.issuer.context;
 
-      if (portableId.indexOf("external") !== -1) {
-        logIfDebug(`GPJWP: Found external module: ${portableId}`);
-        const moduleName = getNameFromPortableId(portableId);
-
-        if (this.useInstalledVersions) {
-          let modulePackageFile;
-          try {
-            modulePackageFile = require.resolve(`${moduleName}/package.json`, context ? {
-              paths: [context],
-            } : undefined);
-          } catch (e) {
-            throw new Error(`Can't resolve module: ${moduleName}`);
-          }
-
-          let version;
-          try {
-            version = JSON.parse(fs.readFileSync(modulePackageFile).toString()).version;
-          } catch (e) {
-            throw new Error(`Can't parse package.json file: ${modulePackageFile}`);
-          }
-
-          if (!version) {
-            throw new Error(`Missing package.json version: ${modulePackageFile}`);
-          }
-
-          modules[moduleName] = version;
-        } else {
-          const dependencyVersion = this.dependencyVersionMap[moduleName];
-          if (dependencyVersion) {
-            modules[moduleName] = dependencyVersion;
-          }
-        }
-      } else {
+      if (portableId.indexOf("external") === -1) {
         logIfDebug(`GPJWP: Found module: ${portableId}`);
+        return;
+      }
+
+      logIfDebug(`GPJWP: Found external module: ${portableId}`);
+      const moduleName = getNameFromPortableId(portableId);
+
+      if (builtinModules.indexOf(moduleName) !== -1) {
+        logIfDebug(`GPJWP: Natvie node.js module detected: ${portableId}`);
+        return;
+      }
+
+      if (this.useInstalledVersions) {
+        const context = module.issuer && module.issuer.context;
+
+        let modulePackageFile;
+        try {
+          modulePackageFile = require.resolve(`${moduleName}/package.json`, context ? {
+            paths: [context],
+          } : undefined);
+        } catch (e) {
+          logIfDebug(`GPJWP: Ignoring module without package.json: ${portableId}`);
+          return;
+        }
+
+        let version;
+        try {
+          version = JSON.parse(fs.readFileSync(modulePackageFile).toString()).version;
+        } catch (e) {
+          throw new Error(`Can't parse package.json file: ${modulePackageFile}`);
+        }
+
+        if (!version) {
+          throw new Error(`Missing package.json version: ${modulePackageFile}`);
+        }
+
+        modules[moduleName] = version;
+      } else {
+        const dependencyVersion = this.dependencyVersionMap[moduleName];
+        if (dependencyVersion) {
+          modules[moduleName] = dependencyVersion;
+        }
       }
     };
 
