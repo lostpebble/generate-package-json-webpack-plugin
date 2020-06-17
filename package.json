@@ -3,6 +3,7 @@
   "version": "1.0.1",
   "description": "Generates a package.json file containing the external modules used by your webpack bundle",
   "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "cut-patch-release": "npm version patch && git push --follow-tags && npm publish",
@@ -27,6 +28,7 @@
   },
   "homepage": "https://github.com/lostpebble/generate-package-json-webpack-plugin#readme",
   "devDependencies": {
+    "@types/webpack": "^4.41.17",
     "cross-env": "^5.0.1"
   }
 }
