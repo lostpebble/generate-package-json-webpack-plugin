@@ -1,7 +1,8 @@
 # Next
 
-* Add `additionalDependencies` option.
 - TypeScript Support
+* Add `additionalDependencies` option.
+* Add `useInstalledVersions` option
 
 # 1.0.1
 

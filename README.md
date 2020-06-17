@@ -160,6 +160,9 @@ If you share code between multiple projects or "workspaces" to be bundled into a
  add to the generated file. This is useful if you have some dependencies that are not imported in
   you code but you still want to include them.
 
+`useInstalledVersions`: Resolve node modules and use the exact version that installed in your
+environment. This is useful to lock versions on production deployments.
+
 ### :mag: Things to take note of
 
 You should remember to set the `"main": "./index.js"` to the correct filename (would probably
