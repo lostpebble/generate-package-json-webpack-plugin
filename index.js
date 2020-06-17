@@ -90,37 +90,39 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
         return;
       }
 
-      if (this.useInstalledVersions) {
-        const context = module.issuer && module.issuer.context;
-
-        let modulePackageFile;
-        try {
-          modulePackageFile = require.resolve(`${moduleName}/package.json`, context ? {
-            paths: [context],
-          } : undefined);
-        } catch (e) {
-          logIfDebug(`GPJWP: Ignoring module without package.json: ${portableId}`);
-          return;
-        }
-
-        let version;
-        try {
-          version = JSON.parse(fs.readFileSync(modulePackageFile).toString()).version;
-        } catch (e) {
-          throw new Error(`Can't parse package.json file: ${modulePackageFile}`);
-        }
-
-        if (!version) {
-          throw new Error(`Missing package.json version: ${modulePackageFile}`);
-        }
-
-        modules[moduleName] = version;
-      } else {
+      if (!this.useInstalledVersions) {
         const dependencyVersion = this.dependencyVersionMap[moduleName];
         if (dependencyVersion) {
           modules[moduleName] = dependencyVersion;
         }
+
+        return;
       }
+
+      const context = module.issuer && module.issuer.context;
+
+      let modulePackageFile;
+      try {
+        modulePackageFile = require.resolve(`${moduleName}/package.json`, context ? {
+          paths: [context],
+        } : undefined);
+      } catch (e) {
+        logIfDebug(`GPJWP: Ignoring module without package.json: ${portableId}`);
+        return;
+      }
+
+      let version;
+      try {
+        version = JSON.parse(fs.readFileSync(modulePackageFile).toString()).version;
+      } catch (e) {
+        throw new Error(`Can't parse package.json file: ${modulePackageFile}`);
+      }
+
+      if (!version) {
+        throw new Error(`Missing package.json version: ${modulePackageFile}`);
+      }
+
+      modules[moduleName] = version;
     };
 
     compilation.chunks.forEach((chunk) => {
