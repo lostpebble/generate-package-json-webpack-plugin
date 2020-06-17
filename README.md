@@ -156,6 +156,10 @@ An object with the following structure:
 `extraSourcePackageFilenames` : This is useful for mono-repos and projects where your dependencies in your code are not only defined in a single `package.json` file.
 If you share code between multiple projects or "workspaces" to be bundled into a final distribution project, you probably want to set this option.
 
+`additionalDependencies`: A dictionary of additional dependencies (same as `package.json` format) to
+ add to the generated file. This is useful if you have some dependencies that are not imported in
+  you code but you still want to include them.
+
 ### :mag: Things to take note of
 
 You should remember to set the `"main": "./index.js"` to the correct filename (would probably

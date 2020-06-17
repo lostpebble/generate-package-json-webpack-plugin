@@ -1,5 +1,6 @@
 # Next
 
+* Add `additionalDependencies` option.
 - TypeScript Support
 
 # 1.0.1
