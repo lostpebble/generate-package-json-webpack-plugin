@@ -145,7 +145,11 @@ An object with the following structure:
      debug: true,
      extraSourcePackageFilenames: [
        join(__dirname, "../other-workspace/package.json"),
-    ],
+     ],
+     additionalDependencies: {
+       react: "^16.13.1",
+     },
+     useInstalledVersions: true,
   }
 ```
 
@@ -160,7 +164,7 @@ If you share code between multiple projects or "workspaces" to be bundled into a
  add to the generated file. This is useful if you have some dependencies that are not imported in
   you code but you still want to include them.
 
-`useInstalledVersions`: Resolve node modules and use the exact version that installed in your
+`useInstalledVersions` (default: *false*) : Resolve node modules and use the exact version that installed in your
 environment. This is useful to lock versions on production deployments.
 
 ### :mag: Things to take note of

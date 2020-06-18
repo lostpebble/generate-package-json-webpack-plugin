@@ -6,8 +6,11 @@ declare class GeneratePackageJsonPlugin extends Plugin {
     versionsPackageFilename: string,
     extraOptions?: {
       debug?: boolean;
-      extraSourcePackageFilenames?: string[]; },
-    );
+      extraSourcePackageFilenames?: string[];
+      additionalDependencies?: Record<string, string>;
+      useInstalledVersions?: boolean;
+    },
+  );
 }
 
 export default GeneratePackageJsonPlugin;
