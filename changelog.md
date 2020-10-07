@@ -1,3 +1,7 @@
+# Next
+
+* Add `peerDependencies` and `devDependencies` support
+
 # 1.1.1
 
 (Much thanks to @moshest for these changes)
