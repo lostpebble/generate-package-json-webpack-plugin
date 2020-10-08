@@ -2,49 +2,63 @@
  * Created by Paul on 2017-07-02.
  */
 const fs = require("fs");
+const path = require("path");
 const util = require("util");
 const { builtinModules } = require("module");
 
 let debugMode = false;
 
-function GeneratePackageJsonPlugin(otherPackageValues = {
-  name: "",
-  version: "0.0.1",
-}, versionsPackageFilename = null, {
-  debug = false,
-  extraSourcePackageFilenames = [],
-  additionalDependencies = {},
-  useInstalledVersions = false,
-} = {}) {
-  if (versionsPackageFilename === null) {
-    throw new Error("GeneratePackageJsonPlugin: Must provide a source file for package.json as second plugin argument");
-  }
+const pluginPrefix = "( Generate Package Json Webpack Plugin ): ";
 
+function GeneratePackageJsonPlugin(
+  basePackage = {
+    name: "",
+    version: "0.0.1",
+  }, {
+    debug = false,
+    extraSourcePackageFilenames = [],
+    sourcePackageFilenames = [],
+    additionalDependencies = {},
+    useInstalledVersions = true,
+    resolveContextPaths,
+  } = {}
+) {
   if (debug) {
     console.log(`GeneratePackageJsonPlugin: Debugging mode activated!`);
     debugMode = true;
   }
 
-  const extraSourcePackagesDependenciesCombined = {};
+  /*
+  TODO for future - accept a string and load the base.package.json directly
+  if (typeof otherPackageValues === "string") {
+    otherPackageValues = JSON.parse(fs.readFileSync(path.join(__dirname, filename)).toString());
+  }*/
 
-  if (extraSourcePackageFilenames.length > 0) {
-    logIfDebug(`GPJWP: Received ${extraSourcePackageFilenames.length} extra package.json file${extraSourcePackageFilenames.length > 1 ? "s" : ""} from which to source versions (later takes preference):`);
-    extraSourcePackageFilenames.reverse();
+  const sourcePackagesDependencyVersionMap = {};
+
+  const allSourcePackageFilenames = [...extraSourcePackageFilenames, ...sourcePackageFilenames];
+
+  if (allSourcePackageFilenames.length > 0) {
+    logIfDebug(`GPJWP: Received ${allSourcePackageFilenames.length} extra package.json file${allSourcePackageFilenames.length > 1 ? "s" : ""} from which to source versions (later takes preference):`);
+    allSourcePackageFilenames.reverse();
     let fileIndex = 1;
 
-    for (const filename of extraSourcePackageFilenames) {
+    for (const filename of allSourcePackageFilenames) {
       logIfDebug(`${fileIndex++} : ${filename}`);
       const extraSourcePackage = JSON.parse(fs.readFileSync(filename).toString());
-      Object.assign(extraSourcePackagesDependenciesCombined, extraSourcePackage.dependencies ? extraSourcePackage.dependencies : {});
+      Object.assign(sourcePackagesDependencyVersionMap, extraSourcePackage.dependencies ? extraSourcePackage.dependencies : {});
     }
   }
 
-  const sourcePackage = JSON.parse(fs.readFileSync(versionsPackageFilename).toString());
-  const dependencyVersionMap = Object.assign({}, extraSourcePackagesDependenciesCombined, sourcePackage.dependencies, sourcePackage.devDependencies);
+  logIfDebug(`GPJWP: Final map of dependency versions to be used if encountered in bundle:\n`, sourcePackagesDependencyVersionMap);
 
-  logIfDebug(`GPJWP: Final map of dependency versions to be used if encountered in bundle:\n`, dependencyVersionMap);
-
-  Object.assign(this, { otherPackageValues, dependencyVersionMap, additionalDependencies, useInstalledVersions });
+  Object.assign(this, {
+    basePackage,
+    dependencyVersionMap: sourcePackagesDependencyVersionMap,
+    additionalDependencies,
+    useInstalledVersions,
+    resolveContextPaths,
+  });
 }
 
 function logIfDebug(something, object = "") {
@@ -70,11 +84,38 @@ function getNameFromPortableId(raw) {
   return cut;
 }
 
-GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
+GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
   const hook = (compilation, callback) => {
     const dependencyTypes = ["dependencies", "devDependencies", "peerDependencies"]
 
     const modules = Object.assign({}, this.additionalDependencies);
+
+    const getInstalledVersionForModuleName = (moduleName, context) => {
+      let modulePackageFile;
+      try {
+        modulePackageFile = require.resolve(`${moduleName}/package.json`, context ? {
+          paths: [context],
+        } : this.resolveContextPaths ? {
+          paths: this.resolveContextPaths,
+        } : undefined);
+      } catch (e) {
+        logIfDebug(`GPJWP: Ignoring module without a found package.json: ${moduleName}`);
+        return undefined;
+      }
+
+      let version;
+      try {
+        version = JSON.parse(fs.readFileSync(modulePackageFile).toString()).version;
+      } catch (e) {
+        throw new Error(`Can't parse package.json file: ${modulePackageFile}`);
+      }
+
+      if (!version) {
+        throw new Error(`Missing package.json version: ${modulePackageFile}`);
+      }
+
+      return version;
+    }
 
     const processModule = (module) => {
       const portableId = module.portableId ? module.portableId : module.identifier();
@@ -88,7 +129,7 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
       const moduleName = getNameFromPortableId(portableId);
 
       if (builtinModules.indexOf(moduleName) !== -1) {
-        logIfDebug(`GPJWP: Natvie node.js module detected: ${portableId}`);
+        logIfDebug(`GPJWP: Native node.js module detected: ${portableId}`);
         return;
       }
 
@@ -103,7 +144,8 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
 
       const context = module.issuer && module.issuer.context;
 
-      let modulePackageFile;
+      modules[moduleName] = getInstalledVersionForModuleName(moduleName, context);
+      /*let modulePackageFile;
       try {
         modulePackageFile = require.resolve(`${moduleName}/package.json`, context ? {
           paths: [context],
@@ -124,7 +166,7 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
         throw new Error(`Missing package.json version: ${modulePackageFile}`);
       }
 
-      modules[moduleName] = version;
+      modules[moduleName] = version;*/
     };
 
     compilation.chunks.forEach((chunk) => {
@@ -144,7 +186,7 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
       }
     });
 
-    const basePackageValues = Object.assign({}, this.otherPackageValues);
+    const basePackageValues = Object.assign({}, this.basePackage);
 
     for (const dependencyType of dependencyTypes) {
 
@@ -157,23 +199,40 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
 
         for (let k = 0; k < nonWebpackModuleNames.length; k += 1) {
           const moduleName = nonWebpackModuleNames[k];
+          let useVersionMap = !this.useInstalledVersions;
 
           if (basePackageValues[dependencyType] && basePackageValues[dependencyType][moduleName] && basePackageValues[dependencyType][moduleName].length > 0) {
             logIfDebug(`GPJWP: Adding deliberate module in "${dependencyType}" with version set deliberately: ${moduleName} -> ${basePackageValues[dependencyType][moduleName]}`);
-            if (dependencyType === "dependencies"){
+            if (dependencyType === "dependencies") {
               modules[moduleName] = basePackageValues[dependencyType][moduleName];
             }
-          } else if (this.dependencyVersionMap[moduleName] != null) {
-            logIfDebug(`GPJWP: Adding deliberate module in "${dependencyType}" with version found in sources: ${moduleName} -> ${this.dependencyVersionMap[moduleName]}`);
-            if (dependencyType !== "dependencies") {
-              basePackageValues[dependencyType][moduleName] = this.dependencyVersionMap[moduleName];
-              delete modules[moduleName];
+          } else if (this.useInstalledVersions) {
+            const version = getInstalledVersionForModuleName(moduleName);
+            if (version != null) {
+              if (dependencyType !== "dependencies") {
+                basePackageValues[dependencyType][moduleName] = version;
+                delete modules[moduleName];
+              } else {
+                modules[moduleName] = version;
+              }
+            } else {
+              console.warn(`${pluginPrefix}Couldn't find installed version for module "${moduleName}" - falling back to extra source package version map (if provided)`);
+              useVersionMap = true;
             }
-            else {
-              modules[moduleName] = this.dependencyVersionMap[moduleName];
+          }
+
+          if (useVersionMap) {
+            if (this.dependencyVersionMap[moduleName] != null) {
+              logIfDebug(`GPJWP: Adding deliberate module in "${dependencyType}" with version found in sources: ${moduleName} -> ${this.dependencyVersionMap[moduleName]}`);
+              if (dependencyType !== "dependencies") {
+                basePackageValues[dependencyType][moduleName] = this.dependencyVersionMap[moduleName];
+                delete modules[moduleName];
+              } else {
+                modules[moduleName] = this.dependencyVersionMap[moduleName];
+              }
+            } else {
+              console.warn(`${pluginPrefix}You have set a module in "${dependencyType}" to be included deliberately with name: "${moduleName}" - but there is no version specified in any source files, or found to be installed (if you used the option useInstalledVersions)!`);
             }
-          } else {
-            console.warn(`GeneratePackageJsonPlugin: You have set a module in "${dependencyType}" to be included deliberately with name: "${moduleName}" - but there is no version specified in any source files!`);
           }
         }
       }
@@ -185,10 +244,10 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
     const json = JSON.stringify(finalPackageValues, this.replacer ? this.replacer : null, this.space ? this.space : 2);
 
     compilation.assets['package.json'] = {
-      source: function() {
+      source: function () {
         return json;
       },
-      size: function() {
+      size: function () {
         return json.length;
       }
     };
