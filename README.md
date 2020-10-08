@@ -37,7 +37,7 @@ plugins: [new GeneratePackageJsonPlugin(basePackage)],
 That's pretty much it. The plugin will generate a new `package.json` file with all the dependencies your code uses. The
 versions for the detected dependencies are sourced directly from the modules inside `node_modules`.
 
-**N.B.** This base package file is deliberately barren, as a base to built upon for our final output `package.json`- any
+**N.B.** This base package file is deliberately barren, as a base to build upon for our final output `package.json`- any
 dependencies listed inside of it will be set deliberately and interpretted differently by the generation process. [See
 below for more information](#adding-modules-outside-of-your-code-build-modules-etc).
 
