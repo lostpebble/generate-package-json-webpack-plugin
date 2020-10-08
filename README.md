@@ -86,6 +86,9 @@ const basePackageValues = {
     "cross-var": "^1.1.0",
     "cross-env": "",
   },
+  peerDependencies: {
+    "react" : "",
+  }
 }
 ```
 
@@ -96,6 +99,10 @@ regardless of what is in `versionsPackageFilename` it will use this version.
 This is mostly useful for adding dependencies which are required at runtime but which are not picked up in your webpack
 bundle. Such as `cross-var` in this example which injects environment variables into a run script in a cross-platform
 friendly way.
+
+Note that the same behaviour applies to all types of dependencies (`dependencies`, `devDependencies` and 
+`peerDependencies`). In this example `react` will have the same behaviour as `cross-env`, but rather than being placed 
+inside the `dependencies` list in the output file, it will be placed inside the `peerDependencies` list.
 
 ## Simple API
 

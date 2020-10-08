@@ -72,6 +72,8 @@ function getNameFromPortableId(raw) {
 
 GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
   const hook = (compilation, callback) => {
+    const dependencyTypes = ["dependencies", "devDependencies", "peerDependencies"]
+
     const modules = Object.assign({}, this.additionalDependencies);
 
     const processModule = (module) => {
@@ -142,29 +144,44 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
       }
     });
 
-    // Overwrite modules or set new module dependencies for those that have been
-    // deliberately set in " otherPackageValues.dependencies "
-    if (this.otherPackageValues && this.otherPackageValues.dependencies) {
-      const nonWebpackModuleNames = Object.keys(this.otherPackageValues.dependencies);
+    const basePackageValues = Object.assign({}, this.otherPackageValues);
 
-      for (let k = 0; k < nonWebpackModuleNames.length; k += 1) {
-        const moduleName = nonWebpackModuleNames[k];
+    for (const dependencyType of dependencyTypes) {
 
-        if (this.otherPackageValues.dependencies[moduleName] && this.otherPackageValues.dependencies[moduleName].length > 0) {
-          logIfDebug(`GPJWP: Adding deliberate module with version set deliberately: ${moduleName} -> ${this.otherPackageValues.dependencies[moduleName]}`);
-          modules[moduleName] = this.otherPackageValues.dependencies[moduleName];
-        } else if (this.dependencyVersionMap[moduleName] != null) {
-          logIfDebug(`GPJWP: Adding deliberate module with version found in sources: ${moduleName} -> ${this.dependencyVersionMap[moduleName]}`);
-          modules[moduleName] = this.dependencyVersionMap[moduleName];
-        } else {
-          console.warn(`GeneratePackageJsonPlugin: You have set a module to be included deliberately with name: "${moduleName}" - but there is no version specified in any source files!`);
+      // Overwrite modules or set new module dependencies for those that have been
+      // deliberately set in " basePackageValues.[dependencyType] "
+      // This mechanism ensures that dependencies declared in the basePackageValues
+      // take precedence over the found dependencies
+      if (basePackageValues && basePackageValues[dependencyType]) {
+        const nonWebpackModuleNames = Object.keys(basePackageValues[dependencyType]);
+
+        for (let k = 0; k < nonWebpackModuleNames.length; k += 1) {
+          const moduleName = nonWebpackModuleNames[k];
+
+          if (basePackageValues[dependencyType] && basePackageValues[dependencyType][moduleName] && basePackageValues[dependencyType][moduleName].length > 0) {
+            logIfDebug(`GPJWP: Adding deliberate module in "${dependencyType}" with version set deliberately: ${moduleName} -> ${basePackageValues[dependencyType][moduleName]}`);
+            if (dependencyType === "dependencies"){
+              modules[moduleName] = basePackageValues[dependencyType][moduleName];
+            }
+          } else if (this.dependencyVersionMap[moduleName] != null) {
+            logIfDebug(`GPJWP: Adding deliberate module in "${dependencyType}" with version found in sources: ${moduleName} -> ${this.dependencyVersionMap[moduleName]}`);
+            if (dependencyType !== "dependencies") {
+              basePackageValues[dependencyType][moduleName] = this.dependencyVersionMap[moduleName];
+              delete modules[moduleName];
+            }
+            else {
+              modules[moduleName] = this.dependencyVersionMap[moduleName];
+            }
+          } else {
+            console.warn(`GeneratePackageJsonPlugin: You have set a module in "${dependencyType}" to be included deliberately with name: "${moduleName}" - but there is no version specified in any source files!`);
+          }
         }
       }
     }
 
     logIfDebug(`GPJWP: Modules to be used in generated package.json`, modules);
 
-    const finalPackageValues = Object.assign({}, this.otherPackageValues, { dependencies: orderKeys(modules) });
+    const finalPackageValues = Object.assign({}, basePackageValues, { dependencies: orderKeys(modules) });
     const json = JSON.stringify(finalPackageValues, this.replacer ? this.replacer : null, this.space ? this.space : 2);
 
     compilation.assets['package.json'] = {
