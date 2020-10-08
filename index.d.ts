@@ -8,6 +8,7 @@ declare class GeneratePackageJsonPlugin extends Plugin {
       /** @deprecated Use sourcePackageFilenames instead */
       extraSourcePackageFilenames?: string[];
       sourcePackageFilenames?: string[];
+      /** @deprecated Simply add these dependencies to your base package.json */
       additionalDependencies?: Record<string, string>;
       useInstalledVersions?: boolean;
       resolveContextPaths?: string[];
