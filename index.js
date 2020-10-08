@@ -146,8 +146,7 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
 
     const basePackageValues = Object.assign({}, this.otherPackageValues);
 
-    for (let i = 0; i < dependencyTypes.length; i += 1) {
-      const dependencyType = dependencyTypes[i];
+    for (const dependencyType of dependencyTypes) {
 
       // Overwrite modules or set new module dependencies for those that have been
       // deliberately set in " basePackageValues.[dependencyType] "
@@ -159,7 +158,7 @@ GeneratePackageJsonPlugin.prototype.apply = function(compiler) {
         for (let k = 0; k < nonWebpackModuleNames.length; k += 1) {
           const moduleName = nonWebpackModuleNames[k];
 
-          if (basePackageValues[dependencyType][moduleName] && basePackageValues[dependencyType][moduleName].length > 0) {
+          if (basePackageValues[dependencyType] && basePackageValues[dependencyType][moduleName] && basePackageValues[dependencyType][moduleName].length > 0) {
             logIfDebug(`GPJWP: Adding deliberate module in "${dependencyType}" with version set deliberately: ${moduleName} -> ${basePackageValues[dependencyType][moduleName]}`);
             if (dependencyType === "dependencies"){
               modules[moduleName] = basePackageValues[dependencyType][moduleName];
