@@ -1,4 +1,14 @@
-# Next
+# 2.0.0
+
+## Breaking Changes
+
+Big simplification of the API.
+
+* Only two parameters to be provided now, the `basePackage` and `options`
+* Made `useInstalledVersions` defaulted to `true`
+* The old way of specifying `versionsPackageFiles` is still possible - needs to be provided as an option now
+
+# 1.1.2
 
 * Add `peerDependencies` and `devDependencies` support
 
