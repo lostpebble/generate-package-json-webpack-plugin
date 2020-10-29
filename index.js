@@ -5,9 +5,12 @@ const fs = require("fs");
 const path = require("path");
 const util = require("util");
 const { builtinModules } = require("module");
+const { Compilation, sources, version: wpVersion } = require("webpack");
 
 let debugMode = false;
 
+const isWebpack5 = Number(wpVersion.split(".")[0]) >= 5;
+const pluginName = "GeneratePackageJsonPlugin";
 const pluginPrefix = "( Generate Package Json Webpack Plugin ): ";
 
 function GeneratePackageJsonPlugin(
@@ -85,7 +88,7 @@ function getNameFromPortableId(raw) {
 }
 
 GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
-  const hook = (compilation, callback) => {
+  const computePackageJson = (compilation) => {
     const dependencyTypes = ["dependencies", "devDependencies", "peerDependencies"]
 
     const modules = Object.assign({}, this.additionalDependencies);
@@ -142,7 +145,10 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
         return;
       }
 
-      const context = module.issuer && module.issuer.context;
+      const moduleIssuer = isWebpack5
+          ? compilation.moduleGraph.getIssuer(module)
+          : module.issuer;
+      const context = moduleIssuer && moduleIssuer.context;
 
       modules[moduleName] = getInstalledVersionForModuleName(moduleName, context);
       /*let modulePackageFile;
@@ -170,15 +176,19 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
     };
 
     compilation.chunks.forEach((chunk) => {
-      if (typeof chunk.modulesIterable !== "undefined") {
+      if (isWebpack5) {
+        for (const module of compilation.chunkGraph.getChunkModulesIterable(chunk)) {
+          processModule(module);
+        }
+      } else if (typeof chunk.modulesIterable !== "undefined") { // webpack 4
         for (const module of chunk.modulesIterable) {
           processModule(module);
         }
-      } else if (typeof chunk.forEachModule !== "undefined") {
+      } else if (typeof chunk.forEachModule !== "undefined") { // webpack 3
         chunk.forEachModule((module) => {
           processModule(module);
         });
-      } else {
+      } else { // webpack 2
         for (let i = 0; i < chunk.modules.length; i += 1) {
           const module = chunk.modules[i];
           processModule(module);
@@ -241,8 +251,11 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
     logIfDebug(`GPJWP: Modules to be used in generated package.json`, modules);
 
     const finalPackageValues = Object.assign({}, basePackageValues, { dependencies: orderKeys(modules) });
-    const json = JSON.stringify(finalPackageValues, this.replacer ? this.replacer : null, this.space ? this.space : 2);
+    return JSON.stringify(finalPackageValues, this.replacer ? this.replacer : null, this.space ? this.space : 2);
+  };
 
+  const emitPackageJsonOld = (compilation, callback) => { // webpack 2-4
+    const json = computePackageJson(compilation);
     compilation.assets['package.json'] = {
       source: function () {
         return json;
@@ -251,14 +264,27 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
         return json.length;
       }
     };
-
     callback();
   };
 
-  if (typeof compiler.hooks !== "undefined") {
-    compiler.hooks.emit.tapAsync("GeneratePackageJsonPlugin", hook);
+  const emitPackageJson = (compilation) => {
+    const json = computePackageJson(compilation);
+    compilation.emitAsset('package.json', new sources.RawSource(json));
+  };
+
+  if (isWebpack5) {
+    compiler.hooks.thisCompilation.tap(pluginName, (compilation) => {
+      compilation.hooks.processAssets.tap(
+        { name: pluginName, stage: Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL}, 
+        () => emitPackageJson(compilation)
+      );
+    });
   } else {
-    compiler.plugin('emit', hook);
+    if (typeof compiler.hooks !== "undefined") { // webpack 4
+      compiler.hooks.emit.tapAsync(pluginName, emitPackageJsonOld);
+    } else { // webpack 2-3
+      compiler.plugin('emit', emitPackageJsonOld);
+    }
   }
 };
 
