@@ -16,4 +16,4 @@ declare class GeneratePackageJsonPlugin extends Plugin {
   );
 }
 
-export default GeneratePackageJsonPlugin;
+export = GeneratePackageJsonPlugin;
