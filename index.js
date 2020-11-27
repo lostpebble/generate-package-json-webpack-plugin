@@ -95,14 +95,17 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
 
     const getInstalledVersionForModuleName = (moduleName, context) => {
       let modulePackageFile;
+      const resolveFile = path.join(moduleName, "./package.json");
+
       try {
-        modulePackageFile = require.resolve(`${moduleName}/package.json`, context ? {
+        modulePackageFile = require.resolve(resolveFile, context ? {
           paths: [context],
         } : this.resolveContextPaths ? {
           paths: this.resolveContextPaths,
         } : undefined);
+        // modulePackageFile = path.join(modulePath, "./package.json");
       } catch (e) {
-        logIfDebug(`GPJWP: Ignoring module without a found package.json: ${moduleName}`);
+        logIfDebug(`GPJWP: Ignoring module without a found package.json: ${moduleName} ("${resolveFile}" couldn't resolve)`);
         return undefined;
       }
 
@@ -146,8 +149,8 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
       }
 
       const moduleIssuer = isWebpack5
-          ? compilation.moduleGraph.getIssuer(module)
-          : module.issuer;
+        ? compilation.moduleGraph.getIssuer(module)
+        : module.issuer;
       const context = moduleIssuer && moduleIssuer.context;
 
       modules[moduleName] = getInstalledVersionForModuleName(moduleName, context);
@@ -275,7 +278,7 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
   if (isWebpack5) {
     compiler.hooks.thisCompilation.tap(pluginName, (compilation) => {
       compilation.hooks.processAssets.tap(
-        { name: pluginName, stage: Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL}, 
+        { name: pluginName, stage: Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL },
         () => emitPackageJson(compilation)
       );
     });
