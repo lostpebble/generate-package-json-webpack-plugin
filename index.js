@@ -178,26 +178,28 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
       modules[moduleName] = version;*/
     };
 
-    compilation.chunks.forEach((chunk) => {
-      if (isWebpack5) {
-        for (const module of compilation.chunkGraph.getChunkModulesIterable(chunk)) {
-          processModule(module);
-        }
-      } else if (typeof chunk.modulesIterable !== "undefined") { // webpack 4
-        for (const module of chunk.modulesIterable) {
-          processModule(module);
-        }
-      } else if (typeof chunk.forEachModule !== "undefined") { // webpack 3
-        chunk.forEachModule((module) => {
-          processModule(module);
-        });
-      } else { // webpack 2
-        for (let i = 0; i < chunk.modules.length; i += 1) {
-          const module = chunk.modules[i];
-          processModule(module);
-        }
+    if (isWebpack5) {
+      for (const module of compilation.modules) {
+        processModule(module);
       }
-    });
+    } else {
+      compilation.chunks.forEach((chunk) => {
+        if (typeof chunk.modulesIterable !== "undefined") { // webpack 4
+          for (const module of chunk.modulesIterable) {
+            processModule(module);
+          }
+        } else if (typeof chunk.forEachModule !== "undefined") { // webpack 3
+          chunk.forEachModule((module) => {
+            processModule(module);
+          });
+        } else { // webpack 2
+          for (let i = 0; i < chunk.modules.length; i += 1) {
+            const module = chunk.modules[i];
+            processModule(module);
+          }
+        }
+      });
+    }
 
     const basePackageValues = Object.assign({}, this.basePackage);
 
