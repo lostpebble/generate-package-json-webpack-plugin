@@ -279,10 +279,17 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
 
   if (isWebpack5) {
     compiler.hooks.thisCompilation.tap(pluginName, (compilation) => {
-      compilation.hooks.processAssets.tap(
-        { name: pluginName, stage: Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL },
-        () => emitPackageJson(compilation)
-      );
+      if (compilation.hooks.processAssets.tap !== undefined) {
+        compilation.hooks.processAssets.tap(
+          { name: pluginName, stage: Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL },
+          () => emitPackageJson(compilation)
+        );
+      } else {
+        compilation.hooks.processAssets.tapPromise(
+          { name: pluginName, stage: Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL },
+          () => emitPackageJson(compilation)
+        );
+      }
     });
   } else {
     if (typeof compiler.hooks !== "undefined") { // webpack 4
