@@ -29,6 +29,7 @@
   "homepage": "https://github.com/lostpebble/generate-package-json-webpack-plugin#readme",
   "devDependencies": {
     "@types/webpack": "^4.41.17",
-    "cross-env": "^5.0.1"
+    "cross-env": "^5.0.1",
+    "webpack": "5.52.0"
   }
 }

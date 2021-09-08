@@ -144,6 +144,7 @@ An object with the following structure:
      sourcePackageFilenames: [
        join(__dirname, "../other-workspace/package.json"),
      ],
+     forceWebpackVersion: "webpack5",
   }
 ```
 
@@ -165,6 +166,10 @@ multiple contexts could be useful.
 fallback for finding versions. This is useful for mono-repos and projects where your dependencies in your code are not
 only defined from a single contextual project. If you share code between multiple projects or "workspaces" to be bundled
 into a final distribution project, you might want to set this option.
+
+`forceWebpackVersion` (optional- by default the plugin will attempt to detect the version) : This can be set to one of: 
+`webpack4` or `webpack5`. If you are using a version of Webpack lower than 4- then set it to `webpack4`. This may help
+folks who are using Webpack in an environment where multiple versions might be present.
 
 ### :mag: Things to take note of
 
