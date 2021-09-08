@@ -26,7 +26,7 @@ const basePackage = {
   "version": "1.0.0",
   "main": "./index.js",
   "engines": {
-    "node": "<= 6.9.1"
+    "node": ">= 14"
   }
 }
 
@@ -83,7 +83,7 @@ const basePackageValues = {
     "start": "cross-var node --max-old-space-size=$NODE_JS_MAX_OLD_SPACE_SIZE ./server.js"
   }
   "engines": {
-    "node": "<= 6.9.1"
+    "node": ">= 14"
   },
   devDependencies: {
     "cross-var": "^1.1.0",
@@ -123,7 +123,7 @@ const basePackage = {
   "version": "1.0.0",
   "main": "./bundle.js",
   "engines": {
-    "node": "<= 6.9.1"
+    "node": ">= 14"
   }
 }
 ```
@@ -186,7 +186,7 @@ const basePackage = {
     "start": "node ./bundle.js"
   },
   "engines": {
-    "node": "<= 6.9.1"
+    "node": ">= 14"
   }
 }
 ```
