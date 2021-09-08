@@ -5,11 +5,10 @@ const fs = require("fs");
 const path = require("path");
 const util = require("util");
 const { builtinModules } = require("module");
-const { Compilation, sources, version: wpVersion } = require("webpack");
+const { Compilation, sources } = require("webpack");
 
 let debugMode = false;
 
-const isWebpack5 = Number(wpVersion.split(".")[0]) >= 5;
 const pluginName = "GeneratePackageJsonPlugin";
 const pluginPrefix = "( Generate Package Json Webpack Plugin ): ";
 
@@ -24,6 +23,7 @@ function GeneratePackageJsonPlugin(
     additionalDependencies = {},
     useInstalledVersions = true,
     resolveContextPaths,
+    forceWebpackVersion,
   } = {}
 ) {
   if (debug) {
@@ -61,6 +61,7 @@ function GeneratePackageJsonPlugin(
     additionalDependencies,
     useInstalledVersions,
     resolveContextPaths,
+    forceWebpackVersion,
   });
 }
 
@@ -88,6 +89,9 @@ function getNameFromPortableId(raw) {
 }
 
 GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
+  // const isWebpack5 = require("webpack").version.split(".")[0] >= 5;
+  const isWebpack5 = this.forceWebpackVersion != null ? (this.forceWebpackVersion === "webpack5") : (require("webpack").version.split(".")[0] >= 5);
+
   const computePackageJson = (compilation) => {
     const dependencyTypes = ["dependencies", "devDependencies", "peerDependencies"]
 
@@ -122,6 +126,8 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
 
       return version;
     }
+
+    // const isWebpack5 = Number(wpVersion.split(".")[0]) >= 5;
 
     const processModule = (module) => {
       const portableId = module.portableId ? module.portableId : module.identifier();
@@ -279,17 +285,10 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
 
   if (isWebpack5) {
     compiler.hooks.thisCompilation.tap(pluginName, (compilation) => {
-      if (compilation.hooks.processAssets.tap !== undefined) {
-        compilation.hooks.processAssets.tap(
-          { name: pluginName, stage: Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL },
-          () => emitPackageJson(compilation)
-        );
-      } else {
-        compilation.hooks.processAssets.tapPromise(
-          { name: pluginName, stage: Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL },
-          () => emitPackageJson(compilation)
-        );
-      }
+      compilation.hooks.processAssets.tap(
+        { name: pluginName, stage: Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL },
+        () => emitPackageJson(compilation)
+      );
     });
   } else {
     if (typeof compiler.hooks !== "undefined") { // webpack 4
