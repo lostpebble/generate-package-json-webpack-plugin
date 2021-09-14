@@ -88,6 +88,30 @@ function getNameFromPortableId(raw) {
   return cut;
 }
 
+function resolveModuleBasePath(moduleName, options = undefined) {
+  const moduleMainFilePath = require.resolve(moduleName, options);
+
+  const moduleNameParts = moduleName.split("/");
+
+  let searchForPathSection;
+
+  if (moduleName.startsWith("@") && moduleNameParts.length > 1) {
+    const [org, mod] = moduleNameParts;
+    searchForPathSection = `node_modules${path.sep}${org}${path.sep}${mod}`;
+  } else {
+    const [mod] = moduleNameParts;
+    searchForPathSection = `node_modules${path.sep}${mod}`;
+  }
+
+  const lastIndex = moduleMainFilePath.lastIndexOf(searchForPathSection);
+
+  if (lastIndex === -1) {
+    throw new Error(`Couldn't resolve the base path of "${moduleName}". Searched inside the resolved main file path "${moduleMainFilePath}" using "${searchForPathSection}"`);
+  }
+
+  return moduleMainFilePath.slice(0, lastIndex + searchForPathSection.length);
+}
+
 GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
   // const isWebpack5 = require("webpack").version.split(".")[0] >= 5;
   const isWebpack5 = this.forceWebpackVersion != null ? (this.forceWebpackVersion === "webpack5") : (require("webpack").version.split(".")[0] >= 5);
@@ -99,15 +123,26 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
 
     const getInstalledVersionForModuleName = (moduleName, context) => {
       let modulePackageFile;
-      const resolveFile = path.join(moduleName, "./package.json");
+      let resolveFile = path.join(moduleName, "./package.json");
 
       try {
+        const moduleBasePath = resolveModuleBasePath(moduleName, context ? {
+          paths: [context],
+        } : this.resolveContextPaths ? {
+          paths: this.resolveContextPaths,
+        } : undefined);
+
+        /*console.log(`Found module base path: ${moduleBasePath}`);
+
         modulePackageFile = require.resolve(resolveFile, context ? {
           paths: [context],
         } : this.resolveContextPaths ? {
           paths: this.resolveContextPaths,
         } : undefined);
-        // modulePackageFile = path.join(modulePath, "./package.json");
+
+        console.log(`Found module package.json file: ${modulePackageFile}`);*/
+
+        modulePackageFile = path.join(moduleBasePath, "./package.json");
       } catch (e) {
         logIfDebug(`GPJWP: Ignoring module without a found package.json: ${moduleName} ("${resolveFile}" couldn't resolve)`);
         return undefined;
@@ -160,28 +195,6 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
       const context = moduleIssuer && moduleIssuer.context;
 
       modules[moduleName] = getInstalledVersionForModuleName(moduleName, context);
-      /*let modulePackageFile;
-      try {
-        modulePackageFile = require.resolve(`${moduleName}/package.json`, context ? {
-          paths: [context],
-        } : undefined);
-      } catch (e) {
-        logIfDebug(`GPJWP: Ignoring module without package.json: ${portableId}`);
-        return;
-      }
-
-      let version;
-      try {
-        version = JSON.parse(fs.readFileSync(modulePackageFile).toString()).version;
-      } catch (e) {
-        throw new Error(`Can't parse package.json file: ${modulePackageFile}`);
-      }
-
-      if (!version) {
-        throw new Error(`Missing package.json version: ${modulePackageFile}`);
-      }
-
-      modules[moduleName] = version;*/
     };
 
     if (isWebpack5) {
