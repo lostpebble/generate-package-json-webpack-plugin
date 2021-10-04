@@ -75,7 +75,35 @@ function logIfDebug(something, object = "") {
   }
 }
 
+const nodeModulesPart = "node_modules";
+
 function getNameFromPortableId(raw) {
+  if (raw.indexOf("javascript\/esm") >= 0) {
+    const nodeModulesLastIndex = raw.lastIndexOf(nodeModulesPart);
+
+    if (nodeModulesLastIndex >= 0) {
+      const mainModulePart = raw.slice(nodeModulesLastIndex + nodeModulesPart.length + 1);
+      const firstSlashIndex = mainModulePart.indexOf(path.sep);
+
+      if (mainModulePart.startsWith("@")) {
+        const secondSlashIndex = mainModulePart.indexOf(path.sep, firstSlashIndex + 1);
+        if (secondSlashIndex >= 0) {
+          return `${mainModulePart.slice(0, firstSlashIndex)}/${mainModulePart.slice(firstSlashIndex + 1, secondSlashIndex)}`;
+        } else {
+          return `${mainModulePart.slice(0, firstSlashIndex)}/${mainModulePart.slice(firstSlashIndex + 1)}`;
+        }
+      } else {
+        if (firstSlashIndex >= 0) {
+          return mainModulePart.slice(0, firstSlashIndex);
+        } else {
+          return mainModulePart;
+        }
+      }
+    } else {
+      return "";
+    }
+  }
+
   let cut = raw.substring(raw.indexOf("\"") + 1, raw.lastIndexOf("\""));
 
   let slashCount = (cut.match(/\//g) || []).length;
@@ -88,8 +116,28 @@ function getNameFromPortableId(raw) {
   return cut;
 }
 
+const searchErrorNoExportsPart = `No "exports" main defined in `;
+const packageJsonPart = "package.json";
+
 function resolveModuleBasePath(moduleName, options = undefined) {
-  const moduleMainFilePath = require.resolve(moduleName, options);
+  let moduleMainFilePath;
+
+  try {
+    moduleMainFilePath = require.resolve(moduleName, options);
+  } catch (e) {
+    const message = e.message ?? "";
+    const indexOfMessage = message.lastIndexOf(searchErrorNoExportsPart);
+    const indexOfPackage = message.lastIndexOf("package.json");
+
+    if (indexOfMessage >= 0 && indexOfPackage >= 0) {
+      moduleMainFilePath = e.message.slice(
+        indexOfMessage + searchErrorNoExportsPart.length,
+        indexOfPackage + packageJsonPart.length,
+      );
+    } else {
+      throw e;
+    }
+  }
 
   const moduleNameParts = moduleName.split("/");
 
@@ -144,7 +192,8 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
 
         modulePackageFile = path.join(moduleBasePath, "./package.json");
       } catch (e) {
-        logIfDebug(`GPJWP: Ignoring module without a found package.json: ${moduleName} ("${resolveFile}" couldn't resolve)`);
+        // logIfDebug(`GPJWP: Ignoring module without a found package.json: ${moduleName} ("${resolveFile}" couldn't resolve): ${e.message}`);
+        console.error(`GPJWP: Ignoring module without a found package.json: ${moduleName} ("${resolveFile}" couldn't resolve): ${e.message}`);
         return undefined;
       }
 
@@ -167,13 +216,18 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
     const processModule = (module) => {
       const portableId = module.portableId ? module.portableId : module.identifier();
 
-      if (portableId.indexOf("external") === -1) {
+      if (portableId.indexOf("external ") === -1) {
         logIfDebug(`GPJWP: Found module: ${portableId}`);
         return;
       }
 
       logIfDebug(`GPJWP: Found external module: ${portableId}`);
       const moduleName = getNameFromPortableId(portableId);
+
+      if (moduleName.length === 0) {
+        console.error(`GPJWP: Couldn't decipher the module name from external module input: ${portableId} - will be ignored in final output.`);
+        return;
+      }
 
       if (builtinModules.indexOf(moduleName) !== -1) {
         logIfDebug(`GPJWP: Native node.js module detected: ${portableId}`);
@@ -194,7 +248,13 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
         : module.issuer;
       const context = moduleIssuer && moduleIssuer.context;
 
-      modules[moduleName] = getInstalledVersionForModuleName(moduleName, context);
+      const moduleVersion = getInstalledVersionForModuleName(moduleName, context);
+
+      if (moduleVersion == null) {
+        console.error(`GPJWP: Couldn't resolve a version for module "${moduleName}" (from portable ID: ${portableId}) - will be ignored in final output.`)
+      } else {
+        modules[moduleName] = moduleVersion;
+      }
     };
 
     if (isWebpack5) {
