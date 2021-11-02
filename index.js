@@ -24,6 +24,7 @@ function GeneratePackageJsonPlugin(
     useInstalledVersions = true,
     resolveContextPaths,
     forceWebpackVersion,
+    excludeDependencies = [],
   } = {}
 ) {
   if (debug) {
@@ -62,6 +63,7 @@ function GeneratePackageJsonPlugin(
     useInstalledVersions,
     resolveContextPaths,
     forceWebpackVersion,
+    excludeDependencies,
   });
 }
 
@@ -329,6 +331,13 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
             }
           }
         }
+      }
+    }
+
+    for (const depName of this.excludeDependencies) {
+      if (modules[depName] != null) {
+        delete modules[depName];
+        logIfDebug(`GPJWP: excluded "${depName}" from generated package.json`);
       }
     }
 

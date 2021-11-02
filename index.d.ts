@@ -13,6 +13,7 @@ declare class GeneratePackageJsonPlugin extends Plugin {
       useInstalledVersions?: boolean;
       resolveContextPaths?: string[];
       forceWebpackVersion?: "webpack4" | "webpack5";
+      excludeDependencies?: string[];
     },
   );
 }

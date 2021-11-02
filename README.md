@@ -145,6 +145,7 @@ An object with the following structure:
        join(__dirname, "../other-workspace/package.json"),
      ],
      forceWebpackVersion: "webpack5",
+     excludeDependencies: ["aws-sdk"],
   }
 ```
 
@@ -170,6 +171,10 @@ into a final distribution project, you might want to set this option.
 `forceWebpackVersion` (optional- by default the plugin will attempt to detect the version) : This can be set to one of: 
 `webpack4` or `webpack5`. If you are using a version of Webpack lower than 4- then set it to `webpack4`. This may help
 folks who are using Webpack in an environment where multiple versions might be present.
+
+`excludeDependencies` : Here you can set any dependencies you absolutely never want in your output `package.json` file, 
+even if they happen to be used by your code. This is useful in some edge cases, such as where an execution environment
+provides these dependencies for you automatically, without installation required.
 
 ### :mag: Things to take note of
 
