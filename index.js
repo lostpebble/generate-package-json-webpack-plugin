@@ -127,7 +127,7 @@ function resolveModuleBasePath(moduleName, options = undefined) {
   try {
     moduleMainFilePath = require.resolve(moduleName, options);
   } catch (e) {
-    const message = e.message ?? "";
+    const message = e.message ? e.message : "";
     const indexOfMessage = message.lastIndexOf(searchErrorNoExportsPart);
     const indexOfPackage = message.lastIndexOf("package.json");
 
