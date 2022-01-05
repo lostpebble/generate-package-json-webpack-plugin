@@ -226,6 +226,16 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
       logIfDebug(`GPJWP: Found external module: ${portableId}`);
       const moduleName = getNameFromPortableId(portableId);
 
+      if (moduleName === '.' || moduleName === '..') {
+        logIfDebug(`GPJP: excluded "${portableId}" because it is on a relative path`);
+        return;
+      }
+
+      if (this.excludeDependencies.includes(moduleName)) {
+        logIfDebug(`GPJWP: excluded "${moduleName}" from generated package.json`);
+        return;
+      }
+
       if (moduleName.length === 0) {
         console.error(`GPJWP: Couldn't decipher the module name from external module input: ${portableId} - will be ignored in final output.`);
         return;
@@ -331,13 +341,6 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
             }
           }
         }
-      }
-    }
-
-    for (const depName of this.excludeDependencies) {
-      if (modules[depName] != null) {
-        delete modules[depName];
-        logIfDebug(`GPJWP: excluded "${depName}" from generated package.json`);
       }
     }
 
