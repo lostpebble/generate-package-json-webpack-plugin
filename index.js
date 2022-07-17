@@ -169,7 +169,7 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
   const computePackageJson = (compilation) => {
     const dependencyTypes = ["dependencies", "devDependencies", "peerDependencies"]
 
-    const modules = Object.assign({}, this.additionalDependencies);
+    const modules = {};
 
     const getInstalledVersionForModuleName = (moduleName, context) => {
       let modulePackageFile;
@@ -343,6 +343,8 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
         }
       }
     }
+
+    Object.assign(modules, this.additionalDependencies);
 
     logIfDebug(`GPJWP: Modules to be used in generated package.json`, modules);
 
