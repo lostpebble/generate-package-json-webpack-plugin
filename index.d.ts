@@ -1,4 +1,4 @@
-import { Plugin } from 'webpack';
+import { Compiler, Plugin } from 'webpack';
 
 declare class GeneratePackageJsonPlugin extends Plugin {
   constructor(
@@ -16,6 +16,7 @@ declare class GeneratePackageJsonPlugin extends Plugin {
       excludeDependencies?: string[];
     },
   );
+  apply(compiler: Compiler): void;
 }
 
 export = GeneratePackageJsonPlugin;
