@@ -77,6 +77,11 @@ function logIfDebug(something, object = "") {
   }
 }
 
+function isVersionPrefix(versionString) {
+  // Check if the string is a version prefix like "^" or "~"
+  return /^(\^|~)$/.test(versionString);
+}
+
 const nodeModulesPart = "node_modules";
 
 function getNameFromPortableId(raw) {
@@ -306,11 +311,35 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
         for (let k = 0; k < nonWebpackModuleNames.length; k += 1) {
           const moduleName = nonWebpackModuleNames[k];
           let useVersionMap = !this.useInstalledVersions;
+          const versionString = basePackageValues[dependencyType] && basePackageValues[dependencyType][moduleName];
+          const isPrefix = isVersionPrefix(versionString);
 
-          if (basePackageValues[dependencyType] && basePackageValues[dependencyType][moduleName] && basePackageValues[dependencyType][moduleName].length > 0) {
-            logIfDebug(`GPJWP: Adding deliberate module in "${dependencyType}" with version set deliberately: ${moduleName} -> ${basePackageValues[dependencyType][moduleName]}`);
-            if (dependencyType === "dependencies") {
-              modules[moduleName] = basePackageValues[dependencyType][moduleName];
+          if (versionString && versionString.length > 0) {
+            if (isPrefix && this.useInstalledVersions) {
+              // If it's a version prefix, resolve the installed version and apply the prefix
+              logIfDebug(`GPJWP: Adding module in "${dependencyType}" with version prefix: ${moduleName} -> ${versionString}<installed-version>`);
+              const installedVersion = getInstalledVersionForModuleName(moduleName);
+              if (installedVersion != null) {
+                const prefixedVersion = versionString + installedVersion;
+                if (dependencyType === "dependencies") {
+                  modules[moduleName] = prefixedVersion;
+                } else {
+                  if (!basePackageValues[dependencyType]) {
+                    basePackageValues[dependencyType] = {};
+                  }
+                  basePackageValues[dependencyType][moduleName] = prefixedVersion;
+                  delete modules[moduleName];
+                }
+              } else {
+                console.warn(`${pluginPrefix}Couldn't find installed version for module "${moduleName}" with prefix "${versionString}"`);
+                useVersionMap = true;
+              }
+            } else {
+              // Use the version string as-is (it's an explicit version or prefix but useInstalledVersions is false)
+              logIfDebug(`GPJWP: Adding deliberate module in "${dependencyType}" with version set deliberately: ${moduleName} -> ${versionString}`);
+              if (dependencyType === "dependencies") {
+                modules[moduleName] = versionString;
+              }
             }
           } else if (this.useInstalledVersions) {
             const version = getInstalledVersionForModuleName(moduleName);
