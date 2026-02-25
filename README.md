@@ -72,7 +72,7 @@ Simply place those dependencies inside the `basePackageValues` object which repr
 new `package.json` to be created.
 
 Keep the version number string empty (`""`) to have the plugin resolve the version. To use a version which is
-different, set the version string deliberately here.
+different, set the version string deliberately here. You can also use version prefixes `"^"` or `"~"` which will resolve the installed version and prepend the prefix.
 
 ```
 const basePackageValues = {
@@ -88,16 +88,19 @@ const basePackageValues = {
   devDependencies: {
     "cross-var": "^1.1.0",
     "cross-env": "",
+    "lodash": "^",
   },
   peerDependencies: {
-    "react" : "",
+    "react" : "~",
   }
 }
 ```
 
-In this example, `cross-var` has deliberately been set to version `^1.1.0`, and regardless of what is actually installed
-it will use this version.
-`cross-env` however will pull its version number from `node_modules`.
+In this example:
+- `cross-var` has been set to version `^1.1.0` explicitly and will use this exact version
+- `cross-env` will pull its version number from `node_modules` (e.g., `8.0.1`)
+- `lodash` will resolve the installed version with a caret prefix (e.g., `^4.17.21`)
+- `react` will resolve the installed version with a tilde prefix (e.g., `~18.2.0`)
 
 This is mostly useful for adding dependencies which are required at runtime but which are not picked up in your webpack
 bundle. Such as `cross-var` in this example which injects environment variables into a run script in a cross-platform
