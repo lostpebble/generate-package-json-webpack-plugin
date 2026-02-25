@@ -320,7 +320,10 @@ GeneratePackageJsonPlugin.prototype.apply = function (compiler) {
               logIfDebug(`GPJWP: Adding module in "${dependencyType}" with version prefix: ${moduleName} -> ${versionString}<installed-version>`);
               const installedVersion = getInstalledVersionForModuleName(moduleName);
               if (installedVersion != null) {
+                // "versionString" is only the prefix (e.g. "^") as checked by isPrefix() earlier
+                // - so we take the installed version and add the prefix to it for the final version string
                 const prefixedVersion = versionString + installedVersion;
+                
                 if (dependencyType === "dependencies") {
                   modules[moduleName] = prefixedVersion;
                 } else {
